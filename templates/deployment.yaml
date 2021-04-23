@@ -1,0 +1,776 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mssql-korok
+spec:
+  selector:
+    matchLabels:
+      app: mssql-korok
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mssql-korok
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mssql-korok
+        image: mcr.microsoft.com/mssql/server:2017-latest
+        ports:
+        - containerPort: 1433
+          protocol: TCP
+        env:
+        - name: MSSQL_PID
+          value: "Developer"
+        - name: MSSQL_AGENT_ENABLED
+          value: "true"
+        - name: TZ
+          value: "America/Sao_Paulo"
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: MSSQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mssql-korok-password
+              key: SA_PASSWORD
+        - name: MSSQL_AGENT_ENABLED
+          value: "true"
+        volumeMounts:
+        - name: mssqldb
+          mountPath: /var/opt/mssql
+      volumes:
+      - name: mssqldb
+        persistentVolumeClaim:
+          claimName: mssql-korok-dynamic-data
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-kcertificadodigital
+spec:
+  # minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-kcertificadodigital
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-kcertificadodigital
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-kcertificadodigital
+        image: {{ if .Values.certificadodigitalImage }}{{ .Values.certificadodigitalImage }}{{ else }}korok.azurecr.io/korok/certificadodigital:{{ .Values.certificadodigitalVersion }}{{ end }}
+        env:
+        - name: PORT
+          value: "8080"
+      imagePullSecrets:
+      - name: korokazcr
+  
+---  
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-jenkins-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-jenkins
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-jenkins
+    spec:
+      containers:
+      - name: jenkins
+        image: korok.azurecr.io/korok/jenkins:latest2
+        env:
+        - name: KUBECONFIG
+          value: "/config"
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+          - name: jenkins-home
+            mountPath: /var/jenkins_home
+          - name: dockersock
+            mountPath: /var/run/docker.sock
+      volumes:
+        - name: jenkins-home
+          persistentVolumeClaim:
+            claimName: jenkins-data
+        - name: dockersock
+          hostPath:
+            path: /var/run/docker.sock
+      imagePullSecrets:
+      - name: korokazcr
+      nodeSelector:
+        kubernetes.io/hostname: kuberneteslinuxslave2
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mainreact
+spec:
+  # minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-mainreact
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-mainreact
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-mainreact
+        image: korok.azurecr.io/korok/mainreact:{{ .Values.mainreactVersion }}
+        env:
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: FISCAL
+          value: "{{ .Release.Name }}-fiscal-service"
+        - name: USUARIOS
+          value: "{{ .Release.Name }}-usuarios-service"
+        - name: CLIENTES
+          value: "{{ .Release.Name }}-clientes-service"
+        - name: CLASSIFICACAO
+          value: "{{ .Release.Name }}-classificacoescontroller-service"
+        - name: SYBASEAPI
+          value: "integrador-sybaseapi-service.integrador.svc.cluster.local:8080"
+        - name: INTEGRADOR
+          value: "integrador-integrador-service.integrador:8080"
+        - name: CLASSIFICACOES
+          value: "{{ .Release.Name }}-kclassificacoes-service"
+        - name: OBRIGACOES
+          value: "{{ .Release.Name }}-obrigacoescontroller-service"
+        - name: ENVIARARQUIVOS
+          value: "{{ .Release.Name }}-ocrupload-service"
+        - name: CONFERIRXML
+          value: "{{ .Release.Name }}-conferirxml-service"
+        - name: HOMOLOGADOR
+          value: "{{ .Release.Name }}-homologador-service"
+        - name: ANALISES
+          value: "{{ .Release.Name }}-analises-service"
+        - name: EXTRACAO
+          value: "{{ .Release.Name }}-extratordados-service"
+        - name: CLASSIFICARARQUIVOS
+          value: "{{ .Release.Name }}-classificacaogo-service"
+        - name: CONFERIRARQUIVOS
+          value: "{{ .Release.Name }}-conferirarquivos-service"
+        - name: TOKEN_SECRET
+          value: "651636365aa36d7ca2542c28d60f949d44b66cedbdcbad8ff5ec03719bb295a143c278fe1390d44f9127f38786879ad791e9609f120c5bcc7589565730d09fe7bfb189a1cbad428faeded8eeac9bc8ed850ea0a95d2b2ec9b0d73aa76fc85e7f0fcfa6e449851328506f0e8f64c828c9a8d7cc9c0b53008d02fbabb36366dc63"
+        - name: PORT
+          value: "5000"
+      imagePullSecrets:
+      - name: korokazcr
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-redis-core-sessions
+spec:
+  # minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-redis-core-sessions
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-redis-core-sessions
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-redis-core-sessions
+        image: redis
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-korok-utils-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-korok-utils-api
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-korok-utils-api
+    spec:
+      containers:
+      - name: korokutils
+        image: korok.azurecr.io/korok/korokutils:{{ .Values.korokutilsVersion }}
+        env:
+        - name: PORT
+          value: "80"
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: yamlfile
+            mountPath: /app/files
+      volumes:
+        - name: yamlfile
+          hostPath:
+            path: /mnt/korok-utils-api
+      imagePullSecrets:
+      - name: korokazcr
+      nodeSelector:
+        kubernetes.io/hostname: kuberneteslinuxslave3
+      volumes:
+        - name: yamlfile
+          persistentVolumeClaim:
+            claimName: utils-data
+
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-fiscal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-fiscal
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-fiscal
+    spec:
+      containers:
+      - name: fiscal
+        image: korok.azurecr.io/korok/fiscal:{{ .Values.fiscalVersion }}
+        env:
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: FISCAL
+          value: "{{ .Release.Name }}-fiscal-service"
+        - name: SYBASEAPI
+          value: "{{ .Release.Name }}-sybase-service"
+        - name: CLASSIFICACOES
+          value: "{{ .Release.Name }}-kclassificacoes-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-usuarios
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-usuarios
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-usuarios
+    spec:
+      containers:
+      - name: usuarios
+        image: korok.azurecr.io/korok/usuarios:{{ .Values.usuariosVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-conferirarquivos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-conferirarquivos
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-conferirarquivos
+    spec:
+      containers:
+      - name: conferirarquivos
+        image: korok.azurecr.io/korok/conferirarquivos:{{ .Values.conferirarquivosVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-autenticador
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-autenticador
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-autenticador
+    spec:
+      containers:
+      - name: autenticador
+        image: korok.azurecr.io/korok/autenticador:{{ .Values.autenticadorVersion }}
+        env:
+        - name: DB_USER
+          value: "sa"
+        - name: DB_PASS
+          value: "/nd.%-czYjE3"
+        - name: DB_SERVER
+          value: "db.korok.app"
+        - name: SESSION_SECRET
+          value: "@M3N0D0R1M3L@T1R3N0"
+        - name: TOKEN_SECRET
+          value: "651636365aa36d7ca2542c28d60f949d44b66cedbdcbad8ff5ec03719bb295a143c278fe1390d44f9127f38786879ad791e9609f120c5bcc7589565730d09fe7bfb189a1cbad428faeded8eeac9bc8ed850ea0a95d2b2ec9b0d73aa76fc85e7f0fcfa6e449851328506f0e8f64c828c9a8d7cc9c0b53008d02fbabb36366dc63"
+        ports:
+        - containerPort: 3030
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-clientes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-clientes
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-clientes
+    spec:
+      containers:
+      - name: clientes
+        image: korok.azurecr.io/korok/clientes:{{ .Values.clientesVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-classificacoescontroller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-classificacoescontroller
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-classificacoescontroller
+    spec:
+      containers:
+      - name: classificacoescontroller
+        image: korok.azurecr.io/korok/classificacoescontroller:{{ .Values.classificacoescontrollerVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-obrigacoescontroller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-obrigacoescontroller
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-obrigacoescontroller
+    spec:
+      containers:
+      - name: obrigacoescontroller
+        image: korok.azurecr.io/korok/obrigacoescontroller:{{ .Values.obrigacoescontrollerVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-conferirxml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-conferirxml
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-conferirxml
+    spec:
+      containers:
+      - name: conferirxml
+        image: korok.azurecr.io/korok/conferirxml:{{ .Values.conferirxmlVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-homologador
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-homologador
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-homologador
+    spec:
+      containers:
+      - name: homologador
+        image: korok.azurecr.io/korok/homologador:{{ .Values.homologadorVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-analises
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-analises
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-analises
+    spec:
+      containers:
+      - name: analises
+        image: korok.azurecr.io/korok/analises:{{ .Values.analisesVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-ocrkorok
+spec:
+  # minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-ocrkorok
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-ocrkorok
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-ocrkorok
+        image: korok.azurecr.io/korok/ocrkorok:{{ .Values.ocrkorokVersion }}
+        env:
+        - name: GIN_MODE
+          value: "release"
+        - name: GOPRIVATE
+          value: "github.com/korok-team/*"
+        ports:
+        - containerPort: 9000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-ocrupload
+spec:
+  # minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-ocrupload
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-ocrupload
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-ocrupload
+        image: korok.azurecr.io/korok/ocrupload:{{ .Values.ocruploadVersion }}
+        env:
+        - name: GIN_MODE
+          value: "release"
+        - name: GOPRIVATE
+          value: "github.com/korok-team/*"
+        ports:
+        - containerPort: 8080
+      imagePullSecrets:
+      - name: korokazcr
+      
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-extratordados
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-extratordados
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-extratordados
+    spec:
+      containers:
+      - name: extratordados
+        image: korok.azurecr.io/korok/extratordados:{{ .Values.extratordadosVersion }}
+        env:
+        - name: PORTA
+          value: "1433"
+        - name: BANCO
+          value: "db.korok.app"
+        - name: CORE
+          value: "{{ .Release.Name }}-kcore-service"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "db.korok.app"
+        - name: DB_PASSWORD
+          value: "/nd.%-czYjE3"
+        - name: DB_USERNAME
+          value: "sa"
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      - name: korokazcr
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-classificacaogo
+spec:
+  # minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-classificacaogo
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-classificacaogo
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-classificacaogo
+        image: korok.azurecr.io/korok/classificacaogo:{{ .Values.classificacaogoVersion }}
+        env:
+        - name: GIN_MODE
+          value: "release"
+        ports:
+        - containerPort: 8080
+      imagePullSecrets:
+      - name: korokazcr
+      
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-apigateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-apigateway
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-apigateway
+    spec:
+      containers:
+      - name: apigateway
+        image: korok.azurecr.io/korok/apigateway:{{ .Values.apigatewayVersion }}
+        env:
+        - name: TOKEN_SECRET
+          value: "651636365aa36d7ca2542c28d60f949d44b66cedbdcbad8ff5ec03719bb295a143c278fe1390d44f9127f38786879ad791e9609f120c5bcc7589565730d09fe7bfb189a1cbad428faeded8eeac9bc8ed850ea0a95d2b2ec9b0d73aa76fc85e7f0fcfa6e449851328506f0e8f64c828c9a8d7cc9c0b53008d02fbabb36366dc63"
+        ports:
+        - containerPort: 8080
+      imagePullSecrets:
+      - name: korokazcr
+
+
+

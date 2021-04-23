@@ -1,0 +1,302 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-autenticador-service
+
+spec:
+  selector:
+    app: {{ .Release.Name }}-autenticador
+
+  ports:
+    - name: http
+      port: 3030
+
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-fiscal-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-fiscal
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-usuarios-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-usuarios
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-clientes-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-clientes
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-classificacoescontroller-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-classificacoescontroller
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-conferirxml-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-conferirxml
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-homologador-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-homologador
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-analises-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-analises
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-conferirarquivos-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-conferirarquivos
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-obrigacoescontroller-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-obrigacoescontroller
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-kclassificacoes-service
+
+spec:
+  selector:
+    app: {{ .Release.Name }}-kclassificacoes
+  ports:
+    - name: http
+      port: 8080
+
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-korok-service
+spec:
+  selector:
+    app: mssql-korok
+  ports:
+    - protocol: TCP
+      port: 1433
+      targetPort: 1433
+  type: LoadBalancer
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-kcertificadodigital-service
+
+spec:
+  selector:
+    app: {{ .Release.Name }}-kcertificadodigital
+  ports:
+    - name: http
+      port: 8080
+
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-jenkins-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: {{ .Release.Name }}-jenkins
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-mainreact-service
+
+spec:
+  selector:
+    app: {{ .Release.Name }}-mainreact
+  ports:
+    - name: http
+      port: 5000
+
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-korok-utils-api-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-korok-utils-api
+  ports:
+    - name: http
+      port: 80
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-ocrkorok-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-ocrkorok
+  ports:
+    - name: http
+      port: 9000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-ocrupload-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-ocrupload
+  ports:
+    - name: http
+      port: 8080
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-classificacaogo-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-classificacaogo
+  ports:
+    - name: http
+      port: 8080
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-extratordados-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-extratordados
+  ports:
+    - name: http
+      port: 3000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-apigateway-service
+spec:
+  selector:
+    app: {{ .Release.Name }}-apigateway
+  ports:
+    - name: http
+      port: 8080
+  type: ClusterIP

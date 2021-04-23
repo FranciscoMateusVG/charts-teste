@@ -1,0 +1,51 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: jenkins-data
+spec:
+  storageClassName: storage-nfs-client
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mssql-korok-dynamic-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: storage-nfs-client
+  resources:
+    requests:
+      storage: 100Gi
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: integrador-data
+  namespace: integrador
+spec:
+  storageClassName: storage-nfs-client
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: utils-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: storage-nfs-client
+  resources:
+    requests:
+      storage: 20Gi
